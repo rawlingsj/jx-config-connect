@@ -1,0 +1,14 @@
+apiVersion: iam.cnrm.cloud.google.com/v1beta1
+kind: IAMPolicy
+metadata:
+  name: ${CLUSTER_NAME?}-ex
+  namespace: jx-resources
+spec:
+  resourceRef:
+    apiVersion: iam.cnrm.cloud.google.com/v1beta1
+    kind: IAMServiceAccount
+    name: ${CLUSTER_NAME?}-ex
+  bindings:
+    - role: roles/iam.workloadIdentityUser
+      members:
+        - serviceAccount:${PROJECT_ID?}.svc.id.goog[jx/external-dns]
