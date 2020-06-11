@@ -1,11 +1,8 @@
 # install notes
 ```
-export NAMESPACE=jx
 export CLUSTER_NAME=test-cluster-foo
 export PROJECT_ID=${PROJECT_ID?}
 export ZONE=europe-west1-b
-export ENV_GIT_OWNER=<your git id>
-export LABELS=""
 ```
 
 ```
@@ -18,10 +15,8 @@ gcloud beta container clusters create $CLUSTER_NAME \
  --project=$PROJECT_ID \
  --identity-namespace=$PROJECT_ID.svc.id.goog \
  --region=$ZONE \
- --labels=$LABELS \
  --machine-type=n1-standard-4 \
  --num-nodes=2
-
 
 gcloud iam service-accounts create cnrm-system
 
@@ -41,7 +36,6 @@ find jx/ -type f -exec sed -i.bak 's/${CLUSTER_NAME?}/'"$CLUSTER_NAME"'/' {} \;
 kubectl apply -f install-bundle-workload-identity/
 
 kubectl create namespace jx-resources
-kubectl create namespace jx
 
 kubectl annotate namespace jx-resources cnrm.cloud.google.com/project-id=$PROJECT_ID
 
@@ -53,16 +47,26 @@ kubectl apply -f jx/
 # validate
 
 ```
+kubectl create namespace jx
+kubectl create serviceaccount tekton-bot --namespace jx
+kubectl annotate serviceaccount tekton-bot iam.gke.io/gcp-service-account=$CLUSTER_NAME-tk@$PROJECT_ID.iam.gserviceaccount.com --namespace jx
 kubectl run --rm -it \
   --generator=run-pod/v1 \
   --image google/cloud-sdk:slim \
-  --serviceaccount foo \
+  --serviceaccount tekton-bot \
   --namespace jx \
-  test
-
+  config-connect-test
+```
+inside the pod run
+```
 gcloud container clusters list
 ```
 
+## cleanup
+
+```
+kubectl delete namespace jx
+```
 
 # Fetch latest config controller resources
 
@@ -70,7 +74,4 @@ gcloud container clusters list
 gsutil cp gs://cnrm/latest/release-bundle.tar.gz release-bundle.tar.gz
 
 tar zxvf release-bundle.tar.gz
-
-
-
 ```
